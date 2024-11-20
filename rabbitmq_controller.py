@@ -7,7 +7,7 @@ class RabbitmqController:
     """A Python class for interacting with RabbitMQ, a message broker."""
 
     def __init__(self, host: str, port: int, username: str, password: str, heartbeat: int = None) -> None:
-        self.__connection = self.__connecting(
+        self._connection = self._connecting(
             pika.ConnectionParameters(
                 host=host,
                 port=port,
@@ -16,14 +16,14 @@ class RabbitmqController:
             )
         )
 
-    def __connecting(self, parameters: pika.ConnectionParameters) -> pika.BlockingConnection:
+    def _connecting(self, parameters: pika.ConnectionParameters) -> pika.BlockingConnection:
         """Connect to RabbitMQ server."""
         counter = 0
         while True:
             counter += 1
             try:
                 connection = pika.BlockingConnection(parameters=parameters)
-                self.__channel = connection.channel()
+                self._channel = connection.channel()
                 return connection
             except Exception as e:
                 print(f'RabbitMQ connection failed. Counter: {counter}')
@@ -35,21 +35,21 @@ class RabbitmqController:
     def declare_queues(self, names: list, arguments=None) -> None:
         """Declare a queue within the channel context."""
         for name in names:
-            self.__channel.queue_declare(queue=name, arguments=arguments)
+            self._channel.queue_declare(queue=name, arguments=arguments)
 
     def listen(self, prefetch_count: int, queue: str, callback) -> None:
         """Begin consuming messages from the designated queue."""
-        self.__channel.basic_qos(prefetch_count=prefetch_count)
-        self.__channel.basic_consume(queue=queue, on_message_callback=callback)
-        self.__channel.start_consuming()
+        self._channel.basic_qos(prefetch_count=prefetch_count)
+        self._channel.basic_consume(queue=queue, on_message_callback=callback)
+        self._channel.start_consuming()
 
     def accept(self, method: pika.spec.Basic.Deliver) -> None:
         """Accept the message and remove it from the queue."""
-        self.__channel.basic_ack(delivery_tag=method.delivery_tag)
+        self._channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def send(self, queue: str, body: bytes) -> None:
         """Send a message to the designated queue."""
-        self.__channel.basic_publish(exchange='', routing_key=queue, body=body)
+        self._channel.basic_publish(exchange='', routing_key=queue, body=body)
 
     def reject(self, method: pika.spec.Basic.Deliver, body: bytes) -> None:
         """Accept the message and requeue it to the end of the same queue."""
@@ -58,4 +58,4 @@ class RabbitmqController:
 
     def close(self) -> None:
         """Close the RabbitMQ server connection."""
-        self.__connection.close()
+        self._connection.close()
